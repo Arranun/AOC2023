@@ -3,16 +3,22 @@ package main
 import (
 	"AOC2023/helper"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func main() {
 	args := os.Args[1:]
 	lines := helper.ReadTextFile(args[0])
+	start := time.Now()
 	part1(lines)
 	part2(lines)
+
+	elapsed := time.Since(start)
+	log.Printf("Took %s", elapsed)
 }
 
 func part1(lines []string) {

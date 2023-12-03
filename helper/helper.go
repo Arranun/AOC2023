@@ -1,9 +1,9 @@
 package helper
 
 import (
-	"constraints"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/constraints"
 	"os"
 	"strconv"
 	"strings"
@@ -24,7 +24,7 @@ func RemoveError[T any](value T, e error) T {
 func ReadTextFile(filePath string) []string {
 	file, err := os.ReadFile(filePath)
 	check(err)
-	return strings.Split(string(file), "\r\n")
+	return strings.Split(string(file), "\n")
 }
 
 func GetKeysOfSetMap[T int | string](inputMap map[T]bool) []T {
