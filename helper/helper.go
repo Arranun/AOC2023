@@ -163,7 +163,7 @@ func ManHattanDistance(p1, p2 [2]int) int {
 func StringSliceToIntSlice(input []string) []int {
 	intSlice := []int{}
 	for _, str := range input {
-		intSlice = append(intSlice, RemoveError(strconv.Atoi(str)))
+		intSlice = append(intSlice, RemoveError(strconv.Atoi(strings.TrimSpace(str))))
 	}
 	return intSlice
 }
