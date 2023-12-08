@@ -19,6 +19,7 @@ type hand struct {
 func main() {
 	args := os.Args[1:]
 	lines := helper.ReadTextFile(args[0])
+	part2 := args[1] == "true"
 	start := time.Now()
 	hands := make([]hand, len(lines))
 	for i, l := range lines {
@@ -26,15 +27,15 @@ func main() {
 		hands[i] = hand{split[0], helper.RemoveError(strconv.Atoi(split[1]))}
 	}
 	sort.Slice(hands[:], func(i, j int) bool {
-		leftHandScore := getHandScore(hands[i])
-		rightHandScore := getHandScore(hands[j])
+		leftHandScore := getHandScore(hands[i], part2)
+		rightHandScore := getHandScore(hands[j], part2)
 		if leftHandScore == rightHandScore {
 			index := 0
-			for cardToNumber(rune(hands[i].cards[index])) == cardToNumber(rune(hands[j].cards[index])) {
+			for cardToNumber(rune(hands[i].cards[index]), part2) == cardToNumber(rune(hands[j].cards[index]), part2) {
 				index++
 			}
-			cardNumberLeft := cardToNumber(rune(hands[i].cards[index]))
-			cardNumberRight := cardToNumber(rune(hands[j].cards[index]))
+			cardNumberLeft := cardToNumber(rune(hands[i].cards[index]), part2)
+			cardNumberRight := cardToNumber(rune(hands[j].cards[index]), part2)
 			return cardNumberLeft < cardNumberRight
 		}
 		return leftHandScore < rightHandScore
@@ -43,7 +44,7 @@ func main() {
 	for i, v := range hands {
 		s := strings.Split(v.cards, "")
 		sort.Strings(s)
-		fmt.Printf("%s : %s : %d : %d \n", v.cards, strings.Join(s, ""), i+1, getHandScore(v))
+		fmt.Printf("%s : %s : %d : %d \n", v.cards, strings.Join(s, ""), i+1, getHandScore(v, part2))
 		sum += v.bid * (i + 1)
 	}
 	fmt.Println(sum)
@@ -51,43 +52,102 @@ func main() {
 	log.Printf("Took %s", elapsed)
 }
 
-func getHandScore(h hand) int {
-	cardMap := map[string]int{}
-	highest := 0
-	for _, v := range strings.Split(h.cards, "") {
-		cardMap[v]++
-		if cardMap[v] > highest {
-			highest = cardMap[v]
+func getHandScore(h hand, part2 bool) int {
+	joker := 0
+	s := strings.Split(h.cards, "")
+	sort.Strings(s)
+	cards := strings.Join(s, "")
+	if part2 {
+		cards = strings.Replace(cards, "J", "", -1)
+		joker = len(s) - len(cards)
+	}
+	pairMap := getCardDuplicates(cards)
+	scoreWithoutJoker := getScorWithoutJoker(pairMap)
+	if joker == 5 || joker == 4 {
+		return 7
+	}
+	if joker == 3 {
+		switch scoreWithoutJoker {
+		case 2:
+			return 7
+		case 1:
+			return 6
 		}
 	}
-	if highest < 2 {
-		return highest
-	}
-	if highest == 2 {
-		pairAmount := 0
-		for _, v := range cardMap {
-			if v == 2 {
-				pairAmount++
-			}
+	if joker == 2 {
+		switch scoreWithoutJoker {
+		case 4:
+			return 7
+		case 3:
+			return 6
+		case 2:
+			return 6
+		case 1:
+			return 4
 		}
-		if pairAmount == 1 {
-			return 2
-		}
-		return 3
 	}
-	if highest > 3 {
-		return highest + 2
-	}
-	for _, v := range cardMap {
-		if v == 2 {
+	if joker == 1 {
+		switch scoreWithoutJoker {
+		case 6:
+			return 7
+		case 5:
+			return 6
+		case 4:
+			return 6
+		case 3:
 			return 5
+		case 2:
+			return 4
+		case 1:
+			return 2
+
 		}
 	}
-	return 4
+	return scoreWithoutJoker
 }
 
-func cardToNumber(c rune) int {
+func getScorWithoutJoker(pairMap map[int]int) int {
+	if pairMap[5] > 0 {
+		return 7
+	}
+	if pairMap[4] > 0 {
+		return 6
+	}
+	if pairMap[3] > 0 {
+		if pairMap[2] > 0 {
+			return 5
+		}
+		return 4
+	}
+	if pairMap[2] == 2 {
+		return 3
+	}
+	if pairMap[2] == 1 {
+		return 2
+	}
+	return 1
+}
+
+func getCardDuplicates(cards string) map[int]int {
+	pairMap := map[int]int{}
+	cardDuplicates := 1
+	for i := 0; i < len(cards)-1; i++ {
+		if cards[i] == cards[i+1] {
+			cardDuplicates++
+		} else {
+			pairMap[cardDuplicates]++
+			cardDuplicates = 1
+		}
+	}
+	pairMap[cardDuplicates]++
+	return pairMap
+}
+
+func cardToNumber(c rune, part2 bool) int {
 	cardToNumberMap := map[rune]int{'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
+	if part2 {
+		cardToNumberMap['J'] = 1
+	}
 	if cardToNumberMap[c] != 0 {
 		return cardToNumberMap[c]
 	}
