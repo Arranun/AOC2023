@@ -21,7 +21,7 @@ func main() {
 	start := time.Now()
 	existingNodes := parseTree(lines[2:])
 	part1(existingNodes["AAA"], lines)
-	//part2(existingNodes, lines)
+	part2(existingNodes, lines)
 	elapsed := time.Since(start)
 	log.Printf("Took %s", elapsed)
 }
@@ -33,12 +33,18 @@ func part2(existingNodes map[string]*Node, lines []string) {
 			activeNodes = append(activeNodes, v)
 		}
 	}
+	stepsToReachZ := []int{}
+	for _, n := range activeNodes {
+		stepsToReachZ = append(stepsToReachZ, getStepsToZForStartNode(n, lines))
+	}
+	fmt.Println(helper.LCMArray(stepsToReachZ))
+}
+
+func getStepsToZForStartNode(node *Node, lines []string) int {
 	steps := 0
 	directionsIndex := 0
-	for checkAllNodesOnZ(activeNodes) {
-		for i, _ := range activeNodes {
-			activeNodes[i] = step(activeNodes[i], lines[0][directionsIndex])
-		}
+	for node.name[2] != 'Z' {
+		node = step(node, lines[0][directionsIndex])
 		if directionsIndex == len(lines[0])-1 {
 			directionsIndex = 0
 		} else {
@@ -46,7 +52,7 @@ func part2(existingNodes map[string]*Node, lines []string) {
 		}
 		steps++
 	}
-	fmt.Println(steps)
+	return steps
 }
 
 func checkAllNodesOnZ(nodes []*Node) bool {
@@ -84,15 +90,28 @@ func part1(currentNode *Node, lines []string) {
 
 func parseTree(lines []string) map[string]*Node {
 	nodeMap := map[string][2]string{}
+	roots := []string{}
 	for _, v := range lines {
 		indexRight := strings.Index(v, "(") + 1
 		indexLeft := strings.Index(v, ", ") + 2
 		nodeMap[v[0:3]] = [2]string{v[indexRight : indexRight+3], v[indexLeft : indexLeft+3]}
+		if v[2] == 'A' {
+			roots = append(roots, v[0:3])
+		}
 	}
-	root := Node{name: "AAA"}
+	existingNodes := map[string]*Node{}
+	visitedNodes := &map[string]bool{}
+	for _, r := range roots {
+		parseTreeFromRoot(existingNodes, nodeMap, visitedNodes, r)
+	}
+	return existingNodes
+}
+
+func parseTreeFromRoot(existingNodes map[string]*Node, nodeMap map[string][2]string, visitedNodes *map[string]bool, rootName string) {
+	root := Node{name: rootName}
+	existingNodes[root.name] = &root
 	activeNodes := []*Node{&root}
-	existingNodes := map[string]*Node{"AAA": &root}
-	visitedNodes := map[string]bool{"AAA": true}
+	(*visitedNodes)[root.name] = true
 	for len(activeNodes) > 0 {
 		activeNode := activeNodes[0]
 		leftNode := createNode(nodeMap[activeNode.name][0], &existingNodes)
@@ -101,15 +120,14 @@ func parseTree(lines []string) map[string]*Node {
 		activeNode.right = rightNode
 
 		for _, n := range []*Node{activeNode.left, activeNode.right} {
-			if n != nil && !visitedNodes[n.name] {
+			if n != nil && !(*visitedNodes)[n.name] {
 				activeNodes = append(activeNodes, n)
-				visitedNodes[n.name] = true
+				(*visitedNodes)[n.name] = true
 			}
 		}
 		activeNodes = activeNodes[1:]
 		delete(nodeMap, activeNode.name)
 	}
-	return existingNodes
 }
 
 func createNode(name string, existingNodes *map[string]*Node) *Node {

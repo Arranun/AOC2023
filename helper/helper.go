@@ -156,6 +156,27 @@ func Abs[T constraints.Integer](x T) T {
 	return x
 }
 
+func GCD(x int, y int) int {
+	for y != 0 {
+		tempY := y
+		y = x % y
+		x = tempY
+	}
+	return x
+}
+
+func LCM(x, y int) int {
+	return x * y / GCD(x, y)
+}
+
+func LCMArray(input []int) int {
+	lcm := input[0]
+	for i := 1; i < len(input); i++ {
+		lcm = LCM(lcm, input[i])
+	}
+	return lcm
+}
+
 func ManHattanDistance(p1, p2 [2]int) int {
 	return Abs(p1[0]-p2[0]) + Abs(p1[1]-p2[1])
 }
