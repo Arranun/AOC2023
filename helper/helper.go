@@ -46,6 +46,15 @@ func MeasureTime(process string) func() {
 	}
 }
 
+func Filter[T any](ss []T, test func(T) bool) (ret []T) {
+	for _, s := range ss {
+		if test(s) {
+			ret = append(ret, s)
+		}
+	}
+	return
+}
+
 func FindRepeatedItems[T int | int64](itemgroup1, itemgroup2 []T) []T {
 	elementsCompartment1 := map[T]bool{}
 	repeatedElemnts := map[T]bool{}
