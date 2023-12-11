@@ -37,12 +37,14 @@ func getDirIn(pipe rune) [2]int {
 
 func followPipe(start [2]int, lines *[]string) {
 	pipePoints := map[[2]int]rune{}
+	pipePointsOrder := [][2]int{}
 	pos := CurrentPos{start, start, getDirIn(rune((*lines)[start[0]][start[1]]))}
 	pipePoints[pos.position] = rune((*lines)[pos.position[0]][pos.position[1]])
 	pos.getNextPos(rune((*lines)[pos.position[0]][pos.position[1]]))
 	var step int
 	for pos.position != start {
 		pipePoints[pos.position] = rune((*lines)[pos.position[0]][pos.position[1]])
+		pipePointsOrder = append(pipePointsOrder, pos.position)
 		pos.getNextPos(rune((*lines)[pos.position[0]][pos.position[1]]))
 		step++
 	}
@@ -63,57 +65,63 @@ func followPipe(start [2]int, lines *[]string) {
 	for _, l := range tempLines {
 		fmt.Println(l)
 	}
-	tempLines = removeTopBottom(tempLines)
-	tempLines = removeLeftRight(tempLines)
-	fmt.Println()
+	currentlyInLoop := false
+	area := 0
+	tmpLines := []string{}
+	lastCorner := ""
 	for _, l := range tempLines {
+		tmpLine := ""
+		for _, r := range l {
+			if r != '.' {
+				tmpLine += string(r)
+			}
+			switch r {
+			case '|':
+				currentlyInLoop = !currentlyInLoop
+			case 'F':
+				if lastCorner == "" {
+					lastCorner = string(r)
+				}
+			case 'J':
+				if lastCorner == "" {
+					lastCorner = string(r)
+				} else {
+					if lastCorner == "F" {
+						currentlyInLoop = !currentlyInLoop
+					}
+					lastCorner = ""
+				}
+			case 'L':
+				if lastCorner == "" {
+					lastCorner = string(r)
+				}
+			case '7':
+				if lastCorner == "" {
+					lastCorner = string(r)
+				} else {
+					if lastCorner == "L" {
+						currentlyInLoop = !currentlyInLoop
+					}
+					lastCorner = ""
+				}
+			case '.':
+				if currentlyInLoop {
+					tmpLine += "I"
+					area++
+				} else {
+					tmpLine += "O"
+				}
+
+			}
+
+		}
+		tmpLines = append(tmpLines, tmpLine)
+	}
+	fmt.Println(area)
+	for _, l := range tmpLines {
 		fmt.Println(l)
 	}
-}
 
-func removeLeftRight(tempLines []string) []string {
-	constainsPipe := func(i int) bool {
-		for j, _ := range tempLines {
-			if tempLines[j][i] != '.' {
-				return true
-			}
-		}
-		return false
-	}
-	right := 0
-	for {
-		if !constainsPipe(right) {
-			right++
-		} else {
-			break
-		}
-	}
-	left := len(tempLines[0]) - 1
-	for {
-		if !constainsPipe(left) {
-			left--
-		} else {
-			break
-		}
-	}
-	for i, v := range tempLines {
-		tempLines[i] = v[right : left+1]
-	}
-	return tempLines
-}
-
-func removeTopBottom(tempLines []string) []string {
-	constainsPipe := func(rune2 rune) bool {
-		return rune2 != '.'
-	}
-	tmptmpLines := []string{}
-	for _, l := range tempLines {
-		if strings.ContainsFunc(l, constainsPipe) {
-			tmptmpLines = append(tmptmpLines, l)
-		}
-	}
-	tempLines = tmptmpLines
-	return tempLines
 }
 
 func findPipeSPosition(lines *[]string) [2]int {
