@@ -190,6 +190,22 @@ func ManHattanDistance(p1, p2 [2]int) int {
 	return Abs(p1[0]-p2[0]) + Abs(p1[1]-p2[1])
 }
 
+func HeapPermutation(a []int, size int) {
+	if size == 1 {
+		fmt.Println(a)
+	}
+
+	for i := 0; i < size; i++ {
+		HeapPermutation(a, size-1)
+
+		if size%2 == 1 {
+			a[0], a[size-1] = a[size-1], a[0]
+		} else {
+			a[i], a[size-1] = a[size-1], a[i]
+		}
+	}
+}
+
 func StringSliceToIntSlice(input []string) []int {
 	intSlice := []int{}
 	for _, str := range input {
