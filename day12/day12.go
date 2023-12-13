@@ -25,36 +25,59 @@ func main() {
 	args := os.Args[1:]
 	lines := helper.ReadTextFile(args[0])
 	testBool := len(args) > 1 && args[1] == "test"
+	part2Bool := len(args) > 2 && args[2] == "part2"
 	start := time.Now()
-	if testBool {
-		test(lines)
-	} else {
-		part2(lines)
+	variantRowsLines := []string{}
+	for _, r := range lines {
+		split := strings.Fields(r)
+		variantRowsLines = append(variantRowsLines, r)
+		variantRowsLines = append(variantRowsLines, split[0]+"?"+" "+split[1])
+		variantRowsLines = append(variantRowsLines, "?"+split[0]+" "+split[1])
 	}
+	if testBool && part2Bool {
+		testPart2(variantRowsLines, lines)
+		return
+	}
+	if testBool {
+		test(variantRowsLines, lines)
+		return
+	}
+
+	part1(variantRowsLines)
+	part2(variantRowsLines)
 
 	elapsed := time.Since(start)
 	log.Printf("Took %s", elapsed)
 }
 
-func part2(lines []string) {
-	newLines := make([]string, len(lines))
-	for i, l := range lines {
-		split := strings.Split(l, " ")
-		newLines[i] = strings.Repeat(split[0]+"?", 5)[:5*(len(split[0])+1)-1] + " " + strings.Repeat(split[1]+",", 5)[:5*(len(split[1])+1)-1]
-		fmt.Println(newLines[i])
-	}
-	part1(newLines)
-}
-
-func part1(lines []string) {
-	rows := getRows(lines)
-	groupVariantMap := getGroupVariants(rows)
+func part1(variantRowsLines []string) {
+	variantRows := getRows(variantRowsLines)
+	groupVariantMap := getGroupVariants(variantRows)
 	sum := 0
-	for _, r := range rows {
+	for i := 0; i < len(variantRows); i += 3 {
+		r := variantRows[i]
 		possiblePaths := getPossibleVariations(r, groupVariantMap)
 		sum += possiblePaths
 	}
 	fmt.Println(sum)
+}
+
+func part2(variantRowsLines []string) {
+	variantRows := getRows(variantRowsLines)
+	groupVariantMap := getGroupVariants(variantRows)
+	sumPart2 := 0
+	for i := 0; i < len(variantRows); i += 3 {
+		base := getPossibleVariations(variantRows[i], groupVariantMap)
+		expandRight := getPossibleVariations(variantRows[i+1], groupVariantMap)
+		expandLeft := getPossibleVariations(variantRows[i+2], groupVariantMap)
+		rowLineSplit := strings.Fields(variantRowsLines[i])
+		if expandRight > expandLeft || rowLineSplit[0][len(rowLineSplit[0])-1] == '#' {
+			sumPart2 += base * expandRight * expandRight * expandRight * expandRight
+		} else {
+			sumPart2 += base * expandLeft * expandLeft * expandLeft * expandLeft
+		}
+	}
+	fmt.Println(sumPart2)
 }
 
 func getRows(lines []string) []Row {
@@ -81,24 +104,51 @@ func getGroupVariants(rows []Row) map[string][][]int {
 	return groupVariantMap
 }
 
-func test(lines []string) {
-	rowLines := make([]string, len(lines))
+func test(variantRowsLines []string, lines []string) {
+	variantRows := getRows(variantRowsLines)
+	groupVariantMap := getGroupVariants(variantRows)
 	expection := make([]int, len(lines))
 	for i, l := range lines {
 		fields := strings.Fields(l)
-		rowLines[i] = fields[0] + " " + fields[1]
 		expection[i] = helper.RemoveError(strconv.Atoi(fields[2]))
 	}
-	rows := getRows(rowLines)
-	groupVariantMap := getGroupVariants(rows)
 	sum := 0
-	for i, r := range rows {
+	for i := 0; i < len(variantRows); i += 3 {
+		r := variantRows[i]
 		possiblePaths := getPossibleVariations(r, groupVariantMap)
 		sum += possiblePaths
-		if !(possiblePaths == expection[i]) {
-			fmt.Printf("%s: %d \n", lines[i], possiblePaths)
+		if !(possiblePaths == expection[i/3]) {
+			fmt.Printf("%s: %d \n", variantRowsLines[i], possiblePaths)
 			possiblePaths = getPossibleVariations(r, groupVariantMap)
 		}
+	}
+	fmt.Println(sum)
+}
+
+func testPart2(variantRowsLines []string, lines []string) {
+	expection := make([]int, len(lines))
+	for i, l := range lines {
+		fields := strings.Fields(l)
+		expection[i] = helper.RemoveError(strconv.Atoi(fields[2]))
+	}
+	variantRows := getRows(variantRowsLines)
+	groupVariantMap := getGroupVariants(variantRows)
+	sum := 0
+	for i := 0; i < len(variantRows); i += 3 {
+		base := getPossibleVariations(variantRows[i], groupVariantMap)
+		expandRight := getPossibleVariations(variantRows[i+1], groupVariantMap)
+		expandLeft := getPossibleVariations(variantRows[i+2], groupVariantMap)
+		rowLineSplit := strings.Fields(variantRowsLines[i])
+		var possiblePaths int
+		if expandRight > expandLeft || rowLineSplit[0][len(rowLineSplit[0])-1] == '#' {
+			possiblePaths = base * expandRight * expandRight * expandRight * expandRight
+		} else {
+			possiblePaths = base * expandLeft * expandLeft * expandLeft * expandLeft
+		}
+		if !(possiblePaths == expection[i/3]) {
+			fmt.Printf("%s: %d \n", variantRowsLines[i], possiblePaths)
+		}
+		sum += possiblePaths
 	}
 	fmt.Println(sum)
 }
