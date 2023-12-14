@@ -4,266 +4,142 @@ import (
 	"AOC2023/helper"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
-type Row struct {
-	groups []string
+type RowPart2 struct {
+	groups string
 	backup []int
 }
 
-type Path struct {
-	currentGroupIndex int
-	remainBackup      []int
+type ActivPath struct {
+	springIndex   int
+	nextBackup    int
+	currentBackup int
 }
 
 func main() {
 	args := os.Args[1:]
 	lines := helper.ReadTextFile(args[0])
-	testBool := len(args) > 1 && args[1] == "test"
-	part2Bool := len(args) > 2 && args[2] == "part2"
 	start := time.Now()
-	variantRowsLines := []string{}
-	for _, r := range lines {
-		split := strings.Fields(r)
-		variantRowsLines = append(variantRowsLines, r)
-		variantRowsLines = append(variantRowsLines, split[0]+"?"+" "+split[1])
-		variantRowsLines = append(variantRowsLines, "?"+split[0]+" "+split[1])
+	part2(lines)
+	part2Lines := make([]string, len(lines))
+	for i, r := range lines {
+		fields := strings.Fields(r)
+		part2Lines[i] = strings.Repeat(fields[0]+"?", 5)[:5*(len(fields[0])+1)-1] + " " + strings.Repeat(fields[1]+",", 5)[:5*(len(fields[1])+1)-1]
 	}
-	if testBool && part2Bool {
-		testPart2(variantRowsLines, lines)
-		return
-	}
-	if testBool {
-		test(variantRowsLines, lines)
-		return
-	}
-
-	part1(variantRowsLines)
-	part2(variantRowsLines)
+	part2(part2Lines)
 
 	elapsed := time.Since(start)
 	log.Printf("Took %s", elapsed)
 }
 
-func part1(variantRowsLines []string) {
-	variantRows := getRows(variantRowsLines)
-	groupVariantMap := getGroupVariants(variantRows)
-	sum := 0
-	for i := 0; i < len(variantRows); i += 3 {
-		r := variantRows[i]
-		possiblePaths := getPossibleVariations(r, groupVariantMap)
-		sum += possiblePaths
-	}
-	fmt.Println(sum)
-}
-
-func part2(variantRowsLines []string) {
-	variantRows := getRows(variantRowsLines)
-	groupVariantMap := getGroupVariants(variantRows)
-	sumPart2 := 0
-	for i := 0; i < len(variantRows); i += 3 {
-		base := getPossibleVariations(variantRows[i], groupVariantMap)
-		expandRight := getPossibleVariations(variantRows[i+1], groupVariantMap)
-		expandLeft := getPossibleVariations(variantRows[i+2], groupVariantMap)
-		rowLineSplit := strings.Fields(variantRowsLines[i])
-		if expandRight > expandLeft || rowLineSplit[0][len(rowLineSplit[0])-1] == '#' {
-			sumPart2 += base * expandRight * expandRight * expandRight * expandRight
-		} else {
-			sumPart2 += base * expandLeft * expandLeft * expandLeft * expandLeft
-		}
-	}
-	fmt.Println(sumPart2)
-}
-
-func getRows(lines []string) []Row {
-	rows := make([]Row, len(lines))
-	for i, line := range lines {
-		split := strings.Fields(line)
-		rows[i].groups = strings.Fields(strings.ReplaceAll(split[0], ".", " "))
+func part2(lines []string) {
+	rows := make([]RowPart2, len(lines))
+	for i, l := range lines {
+		split := strings.Fields(l)
+		rows[i].groups = split[0]
 		rows[i].backup = helper.StringSliceToIntSlice(strings.Split(split[1], ","))
 	}
-	return rows
-}
-
-func getGroupVariants(rows []Row) map[string][][]int {
-	groupVariantMap := map[string][][]int{}
+	sum := 0
 	for _, r := range rows {
-		for _, g := range r.groups {
-			_, ok := groupVariantMap[g]
-			if !ok {
-				groupVariantMap[g] = getVariationsOfGroup(g)
-			}
-
-		}
-	}
-	return groupVariantMap
-}
-
-func test(variantRowsLines []string, lines []string) {
-	variantRows := getRows(variantRowsLines)
-	groupVariantMap := getGroupVariants(variantRows)
-	expection := make([]int, len(lines))
-	for i, l := range lines {
-		fields := strings.Fields(l)
-		expection[i] = helper.RemoveError(strconv.Atoi(fields[2]))
-	}
-	sum := 0
-	for i := 0; i < len(variantRows); i += 3 {
-		r := variantRows[i]
-		possiblePaths := getPossibleVariations(r, groupVariantMap)
-		sum += possiblePaths
-		if !(possiblePaths == expection[i/3]) {
-			fmt.Printf("%s: %d \n", variantRowsLines[i], possiblePaths)
-			possiblePaths = getPossibleVariations(r, groupVariantMap)
-		}
-	}
-	fmt.Println(sum)
-}
-
-func testPart2(variantRowsLines []string, lines []string) {
-	expection := make([]int, len(lines))
-	for i, l := range lines {
-		fields := strings.Fields(l)
-		expection[i] = helper.RemoveError(strconv.Atoi(fields[2]))
-	}
-	variantRows := getRows(variantRowsLines)
-	groupVariantMap := getGroupVariants(variantRows)
-	sum := 0
-	for i := 0; i < len(variantRows); i += 3 {
-		base := getPossibleVariations(variantRows[i], groupVariantMap)
-		expandRight := getPossibleVariations(variantRows[i+1], groupVariantMap)
-		expandLeft := getPossibleVariations(variantRows[i+2], groupVariantMap)
-		rowLineSplit := strings.Fields(variantRowsLines[i])
-		var possiblePaths int
-		if expandRight > expandLeft || rowLineSplit[0][len(rowLineSplit[0])-1] == '#' {
-			possiblePaths = base * expandRight * expandRight * expandRight * expandRight
-		} else {
-			possiblePaths = base * expandLeft * expandLeft * expandLeft * expandLeft
-		}
-		if !(possiblePaths == expection[i/3]) {
-			fmt.Printf("%s: %d \n", variantRowsLines[i], possiblePaths)
-		}
+		possiblePaths := r.getPossiblePathsPart2()
 		sum += possiblePaths
 	}
 	fmt.Println(sum)
+
 }
 
-func getPossibleVariations(row Row, groupVariantMap map[string][][]int) int {
-	activePaths := []Path{{0, row.backup}}
-	possiblePaths := []Path{}
+func (row RowPart2) getPossiblePathsPart2() int {
+	activePaths := map[ActivPath]int{}
+	activePaths[ActivPath{0, 0, -1}] = 1
+	possiblePaths := 0
 	for len(activePaths) > 0 {
-		currentPath := activePaths[0]
-		activePaths = activePaths[1:]
-		if currentPath.currentGroupIndex == len(row.groups) && len(currentPath.remainBackup) == 0 {
-			possiblePaths = append(possiblePaths, currentPath)
-		} else if !(currentPath.currentGroupIndex == len(row.groups)) {
-			groupVars := groupVariantMap[row.groups[currentPath.currentGroupIndex]]
-			for _, gv := range groupVars {
-				if groupVarPossible(gv, currentPath.remainBackup) {
-					zeroesInGv := 0
-					for _, v := range gv {
-						if v == 0 {
-							zeroesInGv++
-						}
-					}
-					newActivePath := Path{}
-					newActivePath.currentGroupIndex = currentPath.currentGroupIndex + 1
-					newActivePath.remainBackup = currentPath.remainBackup[len(gv)-zeroesInGv:]
-					activePaths = append(activePaths, newActivePath)
+		var currentPath ActivPath
+		var currentAmount int
+		for currentPath, currentAmount = range activePaths {
+			break
+		}
+		delete(activePaths, currentPath)
+		if currentPath.currentBackup < 1 && currentPath.nextBackup == len(row.backup) && currentPath.springIndex == len(row.groups) {
+			possiblePaths += currentAmount
+		} else if row.enoughRemainingBroken(currentPath) {
+			for _, r := range currentPath.getPossibleNextSteps(row) {
+				tmpActivePath := currentPath
+				if tmpActivePath.nextStep(r, row) {
+					activePaths[tmpActivePath] += currentAmount
 				}
 			}
 		}
 	}
-	return len(possiblePaths)
+	return possiblePaths
 }
 
-func groupVarPossible(groupVar []int, remainingBackup []int) bool {
-	if len(groupVar) == 1 && groupVar[0] == 0 && len(remainingBackup) == 0 {
+func (row RowPart2) enoughRemainingBroken(currentPath ActivPath) bool {
+	return currentPath.currentBackup+helper.Sum(row.backup[currentPath.nextBackup:]) <= strings.Count(row.groups[currentPath.springIndex:], "?")+strings.Count(row.groups[currentPath.springIndex:], "#")
+}
+
+func (aP *ActivPath) getPossibleNextSteps(row RowPart2) []rune {
+	if aP.springIndex > len(row.groups)-1 {
+		return []rune{}
+	}
+	nextGroupValue := row.groups[aP.springIndex]
+	switch nextGroupValue {
+	case '.':
+		return []rune{rune(nextGroupValue)}
+	case '#':
+		return []rune{rune(nextGroupValue)}
+	}
+	return []rune{'#', '.'}
+}
+
+func (aP *ActivPath) nextStep(nextSpring rune, row RowPart2) bool {
+	if aP.currentBackup > 0 && nextSpring == '#' {
+		aP.currentBackup -= 1
+		aP.springIndex++
 		return true
 	}
-	if len(groupVar) > len(remainingBackup) {
-		return false
+	if aP.currentBackup == 0 && nextSpring == '.' {
+		aP.currentBackup -= 1
+		aP.springIndex++
+		return true
 	}
-	for i, gv := range groupVar {
-		if gv != 0 && gv != remainingBackup[i] {
-			return false
-		}
+	if aP.currentBackup == -1 && nextSpring == '.' {
+		aP.springIndex++
+		return true
 	}
-	return true
+	if aP.nextBackup < len(row.backup) && aP.currentBackup == -1 && nextSpring == '#' {
+		aP.currentBackup = row.backup[aP.nextBackup] - 1
+		aP.nextBackup++
+		aP.springIndex++
+		return true
+	}
+	return false
 }
 
-func getVariationsOfGroup(group string) [][]int {
-	unknownIndex := []int{}
-	for i, c := range group {
-		if c == '?' {
-			unknownIndex = append(unknownIndex, i)
-		}
+func test(lines []string) {
+	expection := make([]int, len(lines))
+	for i, l := range lines {
+		fields := strings.Fields(l)
+		expection[i] = helper.RemoveError(strconv.Atoi(fields[2]))
 	}
-	variantsLen := int(math.Pow(2, float64(len(unknownIndex))))
-	binaryVariations := make([][]bool, variantsLen)
-	for i := 0; i < variantsLen; i++ {
-		binary := fmt.Sprintf("%0*b", len(unknownIndex), i)
-		binaryVariations[i] = make([]bool, len(unknownIndex))
-		for j, b := range binary {
-			if b == '1' {
-				binaryVariations[i][j] = true
-			}
-		}
+	rows := make([]RowPart2, len(lines))
+	for i, l := range lines {
+		split := strings.Fields(l)
+		rows[i].groups = split[0]
+		rows[i].backup = helper.StringSliceToIntSlice(strings.Split(split[1], ","))
 	}
-	groupVariants := [][]int{}
-	for _, bv := range binaryVariations {
-		groupVariants = append(groupVariants, getBackupFromGroupVariant(group, unknownIndex, bv))
+	sum := 0
+	for i, r := range rows {
+		possiblePaths := r.getPossiblePathsPart2()
+		if !(possiblePaths == expection[i]) {
+			fmt.Printf("%s: %d \n", lines[i], possiblePaths)
+			possiblePaths = r.getPossiblePathsPart2()
+		}
+		sum += possiblePaths
 	}
-
-	return groupVariants
-}
-
-func getBackupFromGroupVariant(group string, unknownIndex []int, binary []bool) []int {
-	backup := []int{}
-	currentBackup := 0
-	unknownIndexIndex := 0
-	binaryIndex := 0
-	for i, r := range group {
-		if unknownIndexIndex < len(unknownIndex) && unknownIndex[unknownIndexIndex] == i {
-			if binary[binaryIndex] {
-				r = '#'
-			} else {
-				r = '.'
-			}
-			binaryIndex++
-			unknownIndexIndex++
-		}
-		if r == '#' {
-			currentBackup++
-		}
-		if r == '.' && currentBackup > 0 {
-			backup = append(backup, currentBackup)
-			currentBackup = 0
-		}
-	}
-	if currentBackup != 0 || len(backup) == 0 {
-		backup = append(backup, currentBackup)
-	}
-
-	return backup
-}
-
-func getBackupFromGroup(group string) []int {
-	backup := []int{0}
-	currentBackup := 0
-	for _, r := range group {
-		if r == '#' {
-			currentBackup++
-		}
-		if r == '.' && currentBackup > 0 {
-			backup = append(backup, currentBackup)
-			currentBackup = 0
-		}
-	}
-	return backup
+	fmt.Println(sum)
 }
