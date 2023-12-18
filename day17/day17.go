@@ -63,7 +63,6 @@ func printHistory(p helper.Point, layout [][]int) {
 		}
 	}
 	for _, pos := range p.History {
-		fmt.Printf("{%d,%d,%d,%d},", pos[0], pos[1], pos[2], pos[3])
 		if pos[2] == 0 && pos[3] == 1 {
 			lines[pos[0]][pos[1]] = ">"
 		}
@@ -88,9 +87,7 @@ func (m *Map) step() {
 	for _, currentPoint := range currentPoints {
 		i := 0
 		for i < 3 {
-			if compare(currentPoint.basePoint.History, [][4]int{{0, 0, 1, 0}, {1, 0, 0, 1}, {1, 1, 0, 1}, {1, 2, 0, 1}, {0, 2, 0, 1}, {0, 3, 0, 1}, {1, 3, 1, 0}, {2, 3, 1, 0}}) {
-				fmt.Println("Here")
-			}
+			currentPoint.basePoint.History = append([][4]int(nil), currentPoint.basePoint.History...)
 			currentPoint.Step()
 			if currentPoint.remainingForward < 0 ||
 				currentPoint.basePoint.FromTop < 0 ||
@@ -163,7 +160,7 @@ func (m *Map) getMinimumValueForPos(fromTop, fromLeft int) int {
 			minimum = minimumPoint.basePoint.PathLength
 		}
 	}
-	//printHistory(minimumPoint.basePoint, m.layout)
+	printHistory(minimumPoint.basePoint, m.layout)
 	return minimum
 }
 
