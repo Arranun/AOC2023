@@ -5,10 +5,41 @@ import (
 	"fmt"
 	"golang.org/x/exp/constraints"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type Point struct {
+	FromTop    int
+	FromLeft   int
+	Direction  [2]int
+	PathLength int
+	History    [][4]int
+}
+
+func (p *Point) StepUntilStop(layout *[][]string, stops []string) {
+	p.Step()
+	for p.FromLeft > -1 && p.FromTop > -1 && p.FromLeft < len((*layout)[0]) && p.FromTop < len(*layout) {
+		if slices.Contains(stops, (*layout)[p.FromTop][p.FromLeft]) {
+			return
+		}
+		p.Step()
+	}
+}
+
+func (p *Point) Step() {
+	direction := p.Direction
+	p.History = append(p.History, [4]int{p.FromTop, p.FromLeft, p.Direction[0], p.Direction[1]})
+	p.FromTop += direction[0]
+	p.FromLeft += direction[1]
+	p.PathLength++
+}
+
+func (p *Point) GetPosAndDir() [4]int {
+	return [4]int{p.FromLeft, p.FromTop, p.Direction[0], p.Direction[1]}
+}
 
 func check(e error) {
 	if e != nil {
