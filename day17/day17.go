@@ -27,12 +27,12 @@ func main() {
 	lines := helper.ReadTextFile(args[0])
 	start := time.Now()
 	baseStartPoint := helper.Point{0, 0, [2]int{0, 1}, 0, [][4]int{}}
-	points := map[[4]int]Point{[4]int{0, 0, 0, 1}: {baseStartPoint, 0}}
+	points := map[[4]int]Point{[4]int{0, 0, 0, 1}: {baseStartPoint, 10}}
 	layout := make([][]int, len(lines))
 	for i, l := range lines {
 		layout[i] = helper.StringSliceToIntSlice(strings.Split(l, ""))
 	}
-	m := Map{layout, points, []Point{{baseStartPoint, 0}}}
+	m := Map{layout, points, []Point{{baseStartPoint, 10}}}
 	for len(m.activePoints) > 0 {
 		m.step()
 	}
@@ -86,7 +86,7 @@ func (m *Map) step() {
 	currentPoints := getPointsWithDirectionChange(nextPoint)
 	for _, currentPoint := range currentPoints {
 		i := 0
-		for i < 3 {
+		for i < 10 {
 			currentPoint.basePoint.History = append([][4]int(nil), currentPoint.basePoint.History...)
 			currentPoint.Step()
 			if currentPoint.remainingForward < 0 ||
@@ -98,7 +98,7 @@ func (m *Map) step() {
 			}
 			currentPoint.basePoint.PathLength += m.layout[currentPoint.basePoint.FromTop][currentPoint.basePoint.FromLeft] - 1
 			currentFastestConnection := m.fastestConnection[currentPoint.basePoint.GetPosAndDir()].basePoint.PathLength
-			if currentFastestConnection == 0 || currentFastestConnection > currentPoint.basePoint.PathLength {
+			if currentPoint.remainingForward < 7 && (currentFastestConnection == 0 || currentFastestConnection > currentPoint.basePoint.PathLength) {
 				m.fastestConnection[currentPoint.basePoint.GetPosAndDir()] = currentPoint
 				if compare(currentPoint.basePoint.History, [][4]int{{0, 0, 1, 0}, {1, 0, 0, 1}, {1, 1, 0, 1}, {1, 2, 0, 1}, {0, 2, 0, 1}, {0, 3, 0, 1}, {1, 3, 1, 0}, {2, 3, 1, 0}}) {
 					if currentPoint.basePoint.FromTop == 1 && currentPoint.basePoint.FromLeft == 5 {
@@ -160,7 +160,6 @@ func (m *Map) getMinimumValueForPos(fromTop, fromLeft int) int {
 			minimum = minimumPoint.basePoint.PathLength
 		}
 	}
-	printHistory(minimumPoint.basePoint, m.layout)
 	return minimum
 }
 
@@ -171,16 +170,16 @@ func getPointsWithDirectionChange(p Point) []Point {
 		fallthrough
 	case [2]int{0, -1}:
 		points[0].basePoint.Direction = [2]int{-1, 0}
-		points[0].remainingForward = 3
+		points[0].remainingForward = 10
 		points[1].basePoint.Direction = [2]int{1, 0}
-		points[1].remainingForward = 3
+		points[1].remainingForward = 10
 	case [2]int{1, 0}:
 		fallthrough
 	case [2]int{-1, 0}:
 		points[0].basePoint.Direction = [2]int{0, 1}
-		points[0].remainingForward = 3
+		points[0].remainingForward = 10
 		points[1].basePoint.Direction = [2]int{0, -1}
-		points[1].remainingForward = 3
+		points[1].remainingForward = 10
 	}
 	return points
 }
