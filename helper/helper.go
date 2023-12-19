@@ -37,6 +37,14 @@ func (p *Point) Step() {
 	p.PathLength++
 }
 
+func (p *Point) StepLong(length int) {
+	direction := p.Direction
+	p.History = append(p.History, [4]int{p.FromTop, p.FromLeft, p.Direction[0], p.Direction[1]})
+	p.FromTop += direction[0] * length
+	p.FromLeft += direction[1] * length
+	p.PathLength += length
+}
+
 func (p *Point) GetPosAndDir() [4]int {
 	return [4]int{p.FromLeft, p.FromTop, p.Direction[0], p.Direction[1]}
 }
