@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -32,14 +31,6 @@ type Path struct {
 	rules           []*Rule
 	currentWorkflow *WorkFlow
 	partRange       map[string][2]int
-}
-
-type Limit struct {
-	minMaX map[string][2]int
-}
-
-type Node struct {
-	rule Rule
 }
 
 func main() {
@@ -99,98 +90,6 @@ func reduceParts(partRange map[string][2]int, r *Rule) (map[string][2]int, map[s
 		remainingPartRange[r.element] = [2]int{remainingPartRange[r.element][0], r.number}
 	}
 	return newPartRange, remainingPartRange
-}
-
-func findOverlap(a, b [2]int) [2]int {
-	maxStart := slices.Max([]int{a[0], b[0]})
-	minEnd := slices.Min([]int{a[1], b[1]})
-	if maxStart <= minEnd {
-		return [2]int{maxStart, minEnd}
-	}
-	return [2]int{}
-}
-
-func (p *Path) getLimit() Limit {
-	limit := Limit{map[string][2]int{}}
-	for _, el := range []string{"x", "m", "a", "s"} {
-		limit.minMaX[el] = [2]int{1, 4000}
-	}
-	for _, r := range p.rules {
-		if r.condition == "<" && (r.number < limit.minMaX[r.element][1] || limit.minMaX[r.element][1] == 0) {
-			limit.minMaX[r.element] = [2]int{limit.minMaX[r.element][0], r.number - 1}
-		}
-		if r.condition == ">" && (r.number > limit.minMaX[r.element][0] || limit.minMaX[r.element][0] == 0) {
-			limit.minMaX[r.element] = [2]int{r.number + 1, limit.minMaX[r.element][1]}
-		}
-	}
-	return limit
-}
-
-func getPossibleValues(acceptedPaths []Path) [][4]map[int]bool {
-	possibleValues := make([][4]map[int]bool, len(acceptedPaths))
-	for i, _ := range possibleValues {
-		possibleValues[i] = [4]map[int]bool{{}, {}, {}, {}}
-	}
-	for i, p := range acceptedPaths {
-		currentPossibleValues := possibleValues[i]
-		for i := 0; i < 4; i++ {
-			for j := 1; j < 4001; j++ {
-				currentPossibleValues[i][j] = true
-			}
-		}
-		elementToIndexMap := map[string]int{"x": 0, "m": 1, "a": 2, "s": 3}
-		for _, r := range p.rules {
-			if r.condition == "<" {
-				for i := r.number; i < 4001; i++ {
-					delete(currentPossibleValues[elementToIndexMap[r.element]], i)
-				}
-			}
-			if r.condition == ">" {
-				for i := 0; i < r.number; i++ {
-					delete(currentPossibleValues[elementToIndexMap[r.element]], i)
-				}
-			}
-		}
-	}
-	return possibleValues
-}
-
-func combineLimits(limits [][2]int) int {
-	var sum int
-	for i := 1; i < 4001; i++ {
-		for _, limit := range limits {
-			if i >= limit[0] && i <= limit[1] {
-				sum++
-				break
-			}
-		}
-	}
-	return sum
-}
-
-func getAlwaysMinAndMax(alwaysPossibleMax, alwaysPossibleMin *[4]int, pv *[4]map[int]bool, value int) [2]int {
-	for j := 4000; j > 0; j-- {
-		if pv[value][j] && alwaysPossibleMax[value] < j {
-			alwaysPossibleMax[value] = j
-			break
-		}
-	}
-	for j := 1; j < 4001; j++ {
-		if pv[value][j] && alwaysPossibleMin[value] > j {
-			alwaysPossibleMin[value] = j
-			break
-		}
-	}
-	return [2]int{alwaysPossibleMin[value], alwaysPossibleMax[value]}
-}
-
-func check(combination [4]int, possibleValues *[][4]map[int]bool) bool {
-	for _, pv := range *possibleValues {
-		if pv[0][combination[0]] && pv[1][combination[1]] && pv[2][combination[2]] && pv[3][combination[3]] {
-			return true
-		}
-	}
-	return false
 }
 
 func part1(parts []Part) {
